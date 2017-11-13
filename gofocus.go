@@ -17,6 +17,13 @@ type Task struct {
 	Due			string
 }
 
+var db = openDB()
+
+func openDB() (*sql.DB) {
+	mydb, _ := sql.Open("sqlite3", "file:./OmniFocusDatabase2?mode=ro")
+	return mydb
+}
+
 func idHandler(w http.ResponseWriter, r *http.Request) {
 	id := r.URL.Path[len("/id/"):]
 
@@ -35,10 +42,7 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadId(id string) (*Task, error) {
-    database, _ := sql.Open("sqlite3", "file:./OmniFocusDatabase2?mode=ro")
-    // database, _ := sql.Open("sqlite3", "./OmniFocusDatabase2")
-
-    rows, err := database.Query("SELECT persistentIdentifier, name, parent, dateCompleted, dateDue FROM task where persistentIdentifier = ?", id)
+    rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateCompleted, dateDue FROM task where persistentIdentifier = ?", id)
     if err != nil {
 		return nil, err
     }
