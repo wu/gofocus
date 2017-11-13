@@ -5,6 +5,8 @@ import (
 	"net/http"
     "database/sql"
     "encoding/json"
+	"os/exec"
+	"strings"
 
     _ "github.com/mattn/go-sqlite3"
 )
@@ -19,9 +21,45 @@ type Task struct {
 
 var db = openDB()
 
+var dbfile = "/Users/wu/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
+
 func openDB() (*sql.DB) {
-	mydb, _ := sql.Open("sqlite3", "file:./OmniFocusDatabase2?mode=ro")
+	fmt.Println("Opening database connection...")
+	mydb, _ := sql.Open("sqlite3", "file:" + dbfile + "?mode=ro")
 	return mydb
+}
+
+func createHandler(w http.ResponseWriter, r *http.Request) {
+	name := r.FormValue("name")
+	parent := r.FormValue("parent")
+	deferDate := r.FormValue("defer")
+	dueDate := r.FormValue("due")
+
+	if parent == "" {
+		http.Error(w, "ERROR: parent not specified", http.StatusInternalServerError)
+		return
+	}
+
+	cmd := "/Users/wu/bin/of-create";
+	args := []string{"--" + name, "::" + parent, "#" + deferDate, "#" + dueDate}
+
+	fmt.Println(args)
+
+	output, err := exec.Command(cmd, args...).CombinedOutput()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return;
+	}
+	fmt.Println(string(output))
+
+	strings := strings.Split(string(output), " ")
+
+	if strings[1] == "id" {
+		http.Redirect(w, r, "/id/"+strings[2], http.StatusFound)
+	} else if strings[2] == "id" {
+		http.Redirect(w, r, "/id/"+strings[3], http.StatusFound)
+	}
+
 }
 
 func idHandler(w http.ResponseWriter, r *http.Request) {
@@ -56,12 +94,13 @@ func loadId(id string) (*Task, error) {
     rows.Next();
 	rows.Scan(&persistentIdentifier, &name, &parent, &dateCompleted, &dateDue)
 	t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Completed: dateCompleted, Due: dateDue}
-	// fmt.Fprintf(w, "ID:'%s', NAME:'%s'\n", t.Id, t.Name)
 
 	return t, nil
 }
 
 func main() {
-    http.HandleFunc("/id/", idHandler)
+    http.HandleFunc("/id/",     idHandler)
+    http.HandleFunc("/create", createHandler)
+
     http.ListenAndServe(":8080", nil)
 }
