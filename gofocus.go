@@ -21,15 +21,6 @@ type Task struct {
 	Completed	bool
 }
 
-var db = openDB()
-
-var dbfile = "/Users/wu/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
-
-func openDB() (*sql.DB) {
-	fmt.Println("Opening database connection...")
-	mydb, _ := sql.Open("sqlite3", "file:" + dbfile + "?mode=ro")
-	return mydb
-}
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
 	name := r.FormValue("name")
@@ -82,6 +73,9 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadId(id string) (*Task, error) {
+	dbfile := "/Users/wu/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
+	db, _ := sql.Open("sqlite3", "file:" + dbfile + "?mode=ro")
+
 	rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task where persistentIdentifier = ?", id)
     if err != nil {
 		return nil, err
