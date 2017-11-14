@@ -6,6 +6,7 @@ import (
     "database/sql"
     "encoding/json"
 	"os/exec"
+	"os"
 	"strings"
 	"time"
 
@@ -73,7 +74,13 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadId(id string) (*Task, error) {
-	dbfile := "/Users/wu/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
+
+	var dbfile string
+	if os.Getenv("DBFILE") == "" {
+		dbfile = "/Users/wu/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
+	} else {
+		dbfile = os.Getenv("DBFILE")
+	}
 	db, _ := sql.Open("sqlite3", "file:" + dbfile + "?mode=ro")
 
 	rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task where persistentIdentifier = ?", id)
