@@ -109,7 +109,7 @@ func loadId(id string) (*Task, error) {
     }
     db, _ := sql.Open("sqlite3", "file:" + dbfile + "?mode=ro")
 
-    rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task where persistentIdentifier = ?", id)
+    rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task where persistentIdentifier = ? LIMIT 1", id)
     if err != nil {
         return nil, err
     }
