@@ -34,10 +34,14 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
         return
     }
 
-    cmd := "./of-create";
-    args := []string{"--" + name, "::" + parent, "#" + deferDate, "#" + dueDate}
+	tasktxt := "--" + name + " ::" + parent + " #" + deferDate + " #" + dueDate
 
-    fmt.Println(args)
+	cmd := "/usr/bin/osascript"
+	args := []string{"-e", `tell application "OmniFocus"`,
+		"-e", `parse tasks into default document with transport text "` + tasktxt + `"`,
+		"-e", "end tell"}
+
+	fmt.Println(cmd, args)
 
     output, err := exec.Command(cmd, args...).CombinedOutput()
     if err != nil {
@@ -76,7 +80,17 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 func doneHandler(w http.ResponseWriter, r *http.Request) {
     id := r.URL.Path[len("/done/"):]
 
-    output, err := exec.Command("./of-done",id).CombinedOutput()
+	cmd := "/usr/bin/osascript"
+	args := []string{"-e", `tell application "OmniFocus"`,
+		"-e", "tell default document",
+		"-e", `set selectedTask to first flattened task whose (id = "jnixie_Wx0n")`,
+		"-e", "set completed of selectedTask to true",
+		"-e", "end tell",
+		"-e", "end tell"}
+
+	fmt.Println(cmd, args)
+
+    output, err := exec.Command(cmd, args...).CombinedOutput()
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return;
@@ -89,7 +103,17 @@ func doneHandler(w http.ResponseWriter, r *http.Request) {
 func undoneHandler(w http.ResponseWriter, r *http.Request) {
     id := r.URL.Path[len("/undone/"):]
 
-    output, err := exec.Command("./of-undone",id).CombinedOutput()
+	cmd := "/usr/bin/osascript"
+	args := []string{"-e", `tell application "OmniFocus"`,
+		"-e", "tell default document",
+		"-e", `set selectedTask to first flattened task whose (id = "jnixie_Wx0n")`,
+		"-e", "set completed of selectedTask to false",
+		"-e", "end tell",
+		"-e", "end tell"}
+
+	fmt.Println(cmd, args)
+
+    output, err := exec.Command(cmd, args...).CombinedOutput()
     if err != nil {
         http.Error(w, err.Error(), http.StatusInternalServerError)
         return;
