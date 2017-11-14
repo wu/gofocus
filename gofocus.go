@@ -34,7 +34,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	cmd := "/Users/wu/bin/of-create";
+	cmd := "./of-create";
 	args := []string{"--" + name, "::" + parent, "#" + deferDate, "#" + dueDate}
 
 	fmt.Println(args)
@@ -71,6 +71,32 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 	if err := enc.Encode(&t); err != nil {
 		fmt.Fprintf(w, "%s", err)
 	}
+}
+
+func doneHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/done/"):]
+
+	output, err := exec.Command("./of-done",id).CombinedOutput()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return;
+	}
+	fmt.Println(string(output))
+
+	http.Redirect(w, r, "/id/"+id, http.StatusFound)
+}
+
+func undoneHandler(w http.ResponseWriter, r *http.Request) {
+	id := r.URL.Path[len("/undone/"):]
+
+	output, err := exec.Command("./of-undone",id).CombinedOutput()
+	if err != nil {
+		http.Error(w, err.Error(), http.StatusInternalServerError)
+		return;
+	}
+	fmt.Println(string(output))
+
+	http.Redirect(w, r, "/id/"+id, http.StatusFound)
 }
 
 func loadId(id string) (*Task, error) {
@@ -128,6 +154,8 @@ func loadId(id string) (*Task, error) {
 
 func main() {
     http.HandleFunc("/id/",     idHandler)
+    http.HandleFunc("/done/",   doneHandler)
+    http.HandleFunc("/undone/",   undoneHandler)
     http.HandleFunc("/create", createHandler)
 
     http.ListenAndServe(":8080", nil)

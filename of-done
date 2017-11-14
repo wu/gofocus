@@ -1,0 +1,13 @@
+#!/bin/bash
+
+id=$1
+
+osascript <<EOT
+tell application "OmniFocus"
+  tell default document
+    set selectedTask to first flattened task whose (id = "$id")
+    set completed of selectedTask to true
+  end tell
+end tell
+EOT
+
