@@ -7,6 +7,7 @@ import (
     "encoding/json"
 	"os/exec"
 	"strings"
+	"time"
 
     _ "github.com/mattn/go-sqlite3"
 )
@@ -15,8 +16,9 @@ type Task struct {
 	Id			string
 	Name		string
 	Parent		string
-	Completed	string
-	Due			string
+	Start		time.Time
+	Due			time.Time
+	Completed	bool
 }
 
 var db = openDB()
@@ -80,7 +82,7 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func loadId(id string) (*Task, error) {
-    rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateCompleted, dateDue FROM task where persistentIdentifier = ?", id)
+	rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task where persistentIdentifier = ?", id)
     if err != nil {
 		return nil, err
     }
@@ -88,12 +90,37 @@ func loadId(id string) (*Task, error) {
     var persistentIdentifier string
     var name string
     var parent string
-    var dateCompleted string
-    var dateDue string
+    var dateToStart int64
+    var dateDue int64
+    var dateCompleted int64
 
     rows.Next();
-	rows.Scan(&persistentIdentifier, &name, &parent, &dateCompleted, &dateDue)
-	t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Completed: dateCompleted, Due: dateDue}
+	rows.Scan(&persistentIdentifier, &name, &parent, &dateToStart, &dateDue, &dateCompleted)
+
+	// dateToStart = dateToStart + 978307200;
+	dateToStartReal := time.Unix(dateToStart, 0)
+	fmt.Println("%s", dateToStartReal);
+
+	// dateDue = dateDue + 978307200;
+	dateDueReal := time.Unix(dateDue, 0)
+	fmt.Println("%s", dateDueReal);
+
+	// dateCompletedReal := time.Unix(dateCompleted, 0)
+	fmt.Println("completed: ", dateCompleted);
+
+	var completeFlag bool
+	if dateCompleted == 0 {
+		completeFlag = false
+	} else {
+		completeFlag = true
+	}
+
+	t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
+
+
+	rows.Close()
+
+	db.Close()
 
 	return t, nil
 }
