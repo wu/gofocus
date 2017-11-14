@@ -103,7 +103,7 @@ func loadId(id string) (*Task, error) {
 
 	var dbfile string
 	if os.Getenv("DBFILE") == "" {
-		dbfile = "/Users/wu/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
+		dbfile = os.Getenv("HOME") + "/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
 	} else {
 		dbfile = os.Getenv("DBFILE")
 	}
