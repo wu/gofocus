@@ -24,10 +24,10 @@ type Task struct {
 
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
-    name := r.FormValue("name")
-    parent := r.FormValue("parent")
-    deferDate := r.FormValue("defer")
-    dueDate := r.FormValue("due")
+    name		:= r.FormValue("name")
+    parent		:= r.FormValue("parent")
+    deferDate	:= r.FormValue("defer")
+    dueDate		:= r.FormValue("due")
 
     if parent == "" {
         http.Error(w, "ERROR: parent not specified", http.StatusInternalServerError)
@@ -124,16 +124,8 @@ func loadId(id string) (*Task, error) {
     rows.Next();
     rows.Scan(&persistentIdentifier, &name, &parent, &dateToStart, &dateDue, &dateCompleted)
 
-    // dateToStart = dateToStart + 978307200;
     dateToStartReal := time.Unix(dateToStart, 0)
-    fmt.Println("%s", dateToStartReal);
-
-    // dateDue = dateDue + 978307200;
     dateDueReal := time.Unix(dateDue, 0)
-    fmt.Println("%s", dateDueReal);
-
-    // dateCompletedReal := time.Unix(dateCompleted, 0)
-    fmt.Println("completed: ", dateCompleted);
 
     var completeFlag bool
     if dateCompleted == 0 {
@@ -144,9 +136,7 @@ func loadId(id string) (*Task, error) {
 
     t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
 
-
     rows.Close()
-
     db.Close()
 
     return t, nil
@@ -155,8 +145,8 @@ func loadId(id string) (*Task, error) {
 func main() {
     http.HandleFunc("/id/",     idHandler)
     http.HandleFunc("/done/",   doneHandler)
-    http.HandleFunc("/undone/",   undoneHandler)
-    http.HandleFunc("/create", createHandler)
+    http.HandleFunc("/undone/", undoneHandler)
+    http.HandleFunc("/create",  createHandler)
 
     http.ListenAndServe(":8080", nil)
 }
