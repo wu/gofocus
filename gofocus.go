@@ -22,6 +22,7 @@ type Task struct {
     Completed   bool
 }
 
+var QUERY_BASE string = "SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task "
 
 func createHandler(w http.ResponseWriter, r *http.Request) {
     name		:= r.FormValue("name")
@@ -77,6 +78,62 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
     }
 }
 
+func queryHandler(w http.ResponseWriter, r *http.Request) {
+    query := r.URL.Path[len("/query/"):]
+
+	db, dberr := openDB()
+    if dberr != nil {
+        http.Error(w, dberr.Error(), http.StatusInternalServerError)
+        return;
+    }
+
+    rows, err := db.Query(QUERY_BASE + "where name like ? LIMIT 50", query)
+    if err != nil {
+        http.Error(w, err.Error(), http.StatusInternalServerError)
+        return;
+    }
+
+    var persistentIdentifier string
+    var name string
+    var parent string
+    var dateToStart int64
+    var dateDue int64
+    var dateCompleted int64
+
+	tasks := make([]*Task, 0)
+
+	idx := -1
+    for rows.Next() {
+		rows.Scan(&persistentIdentifier, &name, &parent, &dateToStart, &dateDue, &dateCompleted)
+
+		dateToStartReal := time.Unix(dateToStart, 0)
+		dateDueReal := time.Unix(dateDue, 0)
+
+		var completeFlag bool
+		if dateCompleted == 0 {
+			completeFlag = false
+		} else {
+			completeFlag = true
+		}
+
+		t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
+
+		idx++
+		//tasks[idx] = t
+		tasks = append(tasks, t)
+	}
+
+    rows.Close()
+    db.Close()
+
+    enc := json.NewEncoder(w)
+    enc.SetIndent("", "    ")
+
+    if err := enc.Encode(&tasks); err != nil {
+        fmt.Fprintf(w, "%s", err)
+    }
+}
+
 func doneHandler(w http.ResponseWriter, r *http.Request) {
     id := r.URL.Path[len("/done/"):]
 
@@ -123,8 +180,7 @@ func undoneHandler(w http.ResponseWriter, r *http.Request) {
     http.Redirect(w, r, "/id/"+id, http.StatusFound)
 }
 
-func loadId(id string) (*Task, error) {
-
+func openDB() (*sql.DB, error) {
     var dbfile string
     if os.Getenv("DBFILE") == "" {
         dbfile = os.Getenv("HOME") + "/Library/Containers/com.omnigroup.OmniFocus2.MacAppStore/Data/Library/Caches/com.omnigroup.OmniFocus2.MacAppStore/OmniFocusDatabase2"
@@ -132,8 +188,16 @@ func loadId(id string) (*Task, error) {
         dbfile = os.Getenv("DBFILE")
     }
     db, _ := sql.Open("sqlite3", "file:" + dbfile + "?mode=ro")
+	return db, nil
+}
 
-    rows, err := db.Query("SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task where persistentIdentifier = ? LIMIT 1", id)
+func loadId(id string) (*Task, error) {
+	db, dberr := openDB()
+    if dberr != nil {
+        return nil, dberr
+    }
+
+    rows, err := db.Query(QUERY_BASE + "where persistentIdentifier = ? LIMIT 1", id)
     if err != nil {
         return nil, err
     }
@@ -171,6 +235,7 @@ func main() {
     http.HandleFunc("/done/",   doneHandler)
     http.HandleFunc("/undone/", undoneHandler)
     http.HandleFunc("/create",  createHandler)
+    http.HandleFunc("/query/",  queryHandler)
 
     http.ListenAndServe(":8080", nil)
 }
