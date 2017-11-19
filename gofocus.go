@@ -9,6 +9,8 @@ import (
     "os"
     "strings"
     "time"
+    "regexp"
+    "errors"
 
     _ "github.com/mattn/go-sqlite3"
 )
@@ -22,18 +24,63 @@ type Task struct {
     Completed   bool
 }
 
+var validId    = regexp.MustCompile("^/(id|done|undone)/([a-zA-Z0-9_.]+)$")
+var validQuery = regexp.MustCompile("^/query/([a-zA-Z0-9_%.]+)$")
+var validName  = regexp.MustCompile("^([a-zA-Z0-9_. -]+)$")
+var validDate  = regexp.MustCompile("^([a-zA-Z0-9_. -]+)$")
+
 var QUERY_BASE string = "SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task "
 
-func createHandler(w http.ResponseWriter, r *http.Request) {
-    name        := r.FormValue("name")
-    parent      := r.FormValue("parent")
-    deferDate   := r.FormValue("defer")
-    dueDate     := r.FormValue("due")
+func parseRequestId(w http.ResponseWriter, r *http.Request) (string, error) {
+    m := validId.FindStringSubmatch(r.URL.Path)
+    if m == nil {
+        http.NotFound(w, r)
+        return "", errors.New("Invalid ID")
+    }
+    return m[2], nil
+}
 
+func createHandler(w http.ResponseWriter, r *http.Request) {
+    m1 := validName.FindStringSubmatch(r.FormValue("name"))
+    if m1 == nil {
+        http.Error(w, "Invalid Name", http.StatusInternalServerError)
+        return
+    }
+    name := m1[1]
+
+    m2 := validName.FindStringSubmatch(r.FormValue("parent"))
+    if m2 == nil {
+        http.Error(w, "Invalid Parent", http.StatusInternalServerError)
+        return
+    }
+    parent := m2[1]
     if parent == "" {
         http.Error(w, "ERROR: parent not specified", http.StatusInternalServerError)
         return
     }
+
+    deferDate := "";
+    defered := r.FormValue("defer")
+    if defered != "" {
+        m3 := validDate.FindStringSubmatch(defered)
+        if m3 == nil {
+            http.Error(w, "Invalid Defer Date", http.StatusInternalServerError)
+            return
+        }
+        deferDate = m3[1]
+    }
+
+    dueDate := "";
+    due := r.FormValue("due")
+    if due != "" {
+        m4 := validDate.FindStringSubmatch(due)
+        if m4 == nil {
+            http.Error(w, "Invalid Due Date", http.StatusInternalServerError)
+            return
+        }
+        dueDate = m4[1]
+    }
+
 
     tasktxt := "--" + name + " ::" + parent + " #" + deferDate + " #" + dueDate
 
@@ -62,7 +109,10 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func idHandler(w http.ResponseWriter, r *http.Request) {
-    id := r.URL.Path[len("/id/"):]
+    id, err := parseRequestId(w, r)
+    if err != nil {
+        return
+    }
 
     t, err := loadId(id)
     if ( err != nil ) {
@@ -79,7 +129,12 @@ func idHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func queryHandler(w http.ResponseWriter, r *http.Request) {
-    query := r.URL.Path[len("/query/"):]
+    m := validQuery.FindStringSubmatch(r.URL.Path)
+    if m == nil {
+        http.Error(w, "Invalid Query", http.StatusInternalServerError)
+        return
+    }
+    query := m[1]
 
     db, dberr := openDB()
     if dberr != nil {
@@ -135,7 +190,10 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func doneHandler(w http.ResponseWriter, r *http.Request) {
-    id := r.URL.Path[len("/done/"):]
+    id, err := parseRequestId(w, r)
+    if err != nil {
+        return
+    }
 
     cmd := "/usr/bin/osascript"
     args := []string{"-e", `tell application "OmniFocus"`,
@@ -158,7 +216,10 @@ func doneHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func undoneHandler(w http.ResponseWriter, r *http.Request) {
-    id := r.URL.Path[len("/undone/"):]
+    id, err := parseRequestId(w, r)
+    if err != nil {
+        return
+    }
 
     cmd := "/usr/bin/osascript"
     args := []string{"-e", `tell application "OmniFocus"`,
