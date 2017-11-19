@@ -198,7 +198,7 @@ func doneHandler(w http.ResponseWriter, r *http.Request) {
     cmd := "/usr/bin/osascript"
     args := []string{"-e", `tell application "OmniFocus"`,
         "-e", "tell default document",
-        "-e", `set selectedTask to first flattened task whose (id = "jnixie_Wx0n")`,
+        "-e", `set selectedTask to first flattened task whose (id = "` + id + `")`,
         "-e", "set completed of selectedTask to true",
         "-e", "end tell",
         "-e", "end tell"}
@@ -224,7 +224,7 @@ func undoneHandler(w http.ResponseWriter, r *http.Request) {
     cmd := "/usr/bin/osascript"
     args := []string{"-e", `tell application "OmniFocus"`,
         "-e", "tell default document",
-        "-e", `set selectedTask to first flattened task whose (id = "jnixie_Wx0n")`,
+        "-e", `set selectedTask to first flattened task whose (id = "` + id + `")`,
         "-e", "set completed of selectedTask to false",
         "-e", "end tell",
         "-e", "end tell"}
