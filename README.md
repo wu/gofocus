@@ -1,8 +1,8 @@
 ## Synopsis
 
-This project provides an http api for omnifocus.  When http calls are
-received, gofocus calls applescript on the local machine to interact
-with omnifocus, or directly queries the local omnifocus sqlite
+This project provides an HTTP API for OmniFocus, a task management
+tool for OS X and iOS.  HTTP requests are translated into local
+applescript commands or queries to the local omnifocus sqlite
 database.
 
 ## Examples
@@ -12,10 +12,10 @@ database.
 curl -v -F name='test name' -F due=2016-01-01 -F parent=mytasks http://hostname:8080/create
 # new task id returned as a Location code
 
-# query task by id
+# query task by id, returned as JSON
 curl -v http://hostname:8080/id/some_id_here
 
-# query task by name
+# query tasks by name, returned as JSON array
 curl -v 'http://hostname:8080/query/test'
 
 # query task by name with wildcard '%', url-encoded for curl
