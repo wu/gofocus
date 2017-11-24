@@ -15,8 +15,8 @@ import (
 	_ "github.com/mattn/go-sqlite3"
 )
 
-type Task struct {
-	Id        string
+type task struct {
+	ID        string
 	Name      string
 	Parent    string
 	Start     time.Time
@@ -24,15 +24,15 @@ type Task struct {
 	Completed bool
 }
 
-var validId = regexp.MustCompile("^/(id|done|undone)/([a-zA-Z0-9_.]+)$")
+var validID = regexp.MustCompile("^/(id|done|undone)/([a-zA-Z0-9_.]+)$")
 var validQuery = regexp.MustCompile("^/query/([a-zA-Z0-9_%.]+)$")
 var validName = regexp.MustCompile("^([a-zA-Z0-9_. -]+)$")
 var validDate = regexp.MustCompile("^([a-zA-Z0-9_. -]+)$")
 
-var QUERY_BASE string = "SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task "
+var queryBase = "SELECT persistentIdentifier, name, parent, dateToStart + 978307200, dateDue + 978307200, CAST(dateCompleted AS INT) + 978307200 FROM task "
 
-func parseRequestId(w http.ResponseWriter, r *http.Request) (string, error) {
-	m := validId.FindStringSubmatch(r.URL.Path)
+func parseRequestID(w http.ResponseWriter, r *http.Request) (string, error) {
+	m := validID.FindStringSubmatch(r.URL.Path)
 	if m == nil {
 		http.NotFound(w, r)
 		return "", errors.New("Invalid ID")
@@ -68,6 +68,7 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 			return
 		}
 		deferDate = m3[1]
+
 	}
 
 	dueDate := ""
@@ -108,12 +109,12 @@ func createHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func idHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := parseRequestId(w, r)
+	id, err := parseRequestID(w, r)
 	if err != nil {
 		return
 	}
 
-	t, err := loadId(id)
+	t, err := loadID(id)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -141,7 +142,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	rows, err := db.Query(QUERY_BASE+"where name like ? LIMIT 50", query)
+	rows, err := db.Query(queryBase+"where name like ? LIMIT 50", query)
 	if err != nil {
 		http.Error(w, err.Error(), http.StatusInternalServerError)
 		return
@@ -154,7 +155,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 	var dateDue int64
 	var dateCompleted int64
 
-	tasks := make([]*Task, 0)
+	tasks := make([]*task, 0)
 
 	idx := -1
 	for rows.Next() {
@@ -170,7 +171,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 			completeFlag = true
 		}
 
-		t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
+		t := &task{ID: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
 
 		idx++
 		//tasks[idx] = t
@@ -189,7 +190,7 @@ func queryHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func doneHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := parseRequestId(w, r)
+	id, err := parseRequestID(w, r)
 	if err != nil {
 		return
 	}
@@ -215,7 +216,7 @@ func doneHandler(w http.ResponseWriter, r *http.Request) {
 }
 
 func undoneHandler(w http.ResponseWriter, r *http.Request) {
-	id, err := parseRequestId(w, r)
+	id, err := parseRequestID(w, r)
 	if err != nil {
 		return
 	}
@@ -251,13 +252,13 @@ func openDB() (*sql.DB, error) {
 	return db, nil
 }
 
-func loadId(id string) (*Task, error) {
+func loadID(id string) (*task, error) {
 	db, dberr := openDB()
 	if dberr != nil {
 		return nil, dberr
 	}
 
-	rows, err := db.Query(QUERY_BASE+"where persistentIdentifier = ? LIMIT 1", id)
+	rows, err := db.Query(queryBase+"where persistentIdentifier = ? LIMIT 1", id)
 	if err != nil {
 		return nil, err
 	}
@@ -282,7 +283,7 @@ func loadId(id string) (*Task, error) {
 		completeFlag = true
 	}
 
-	t := &Task{Id: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
+	t := &task{ID: persistentIdentifier, Name: name, Parent: parent, Start: dateToStartReal, Due: dateDueReal, Completed: completeFlag}
 
 	rows.Close()
 	db.Close()
