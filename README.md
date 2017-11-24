@@ -18,7 +18,7 @@ curl -v http://hostname:8080/id/some_id_here
 # query tasks by name, returned as JSON array
 curl -v 'http://hostname:8080/query/test'
 
-# query task by name with wildcard '%', url-encoded for curl
+# query task by name with wildcard '%', url-encoded to '%25'
 curl -v 'http://hostname:8080/query/test%25'
 
 # mark task done by id
