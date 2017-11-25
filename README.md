@@ -31,13 +31,13 @@ curl -v http://hostname:8080/done/some_id_here
 ## Motivation
 
 Omnifocus is a fabulous tool.  I use it on OS X, IOS, and even on my
-watch.
+watch.  The one big downside is that it doesn't run on linux.
 
-I've written some other tools to automate omnifocus, but they all
-suffer from one significant limitation--they need to be run on a
-machine where omnifocus is running.  Providing a web API for omnifocus
-will make it possible for tools that run on linux or other systems.
-
+I've written some other tools to automate omnifocus task management,
+but they all suffer from one significant limitation--they need to be
+run on a machine where omnifocus is running.  Adding a web API for
+omnifocus makes it possible to build tools that run on linux or other
+systems.
 
 ## Installation
 
@@ -51,6 +51,9 @@ go build gofocus.go
 # use non-standard database file path
 DBFILE="/path/to/OmniFocusDatabase2" ./gofocus
 ```
+
+## Bugs
+
 
 
 ## License
